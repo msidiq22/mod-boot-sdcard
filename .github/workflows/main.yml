@@ -36,7 +36,6 @@ jobs:
         sudo chown $USER:$GROUPS openwrt
         
     - name: Download Firmware
-      working-directory: /workdir
       run: |
         url="${{ github.event.inputs.firmware }}"
         filename="${url##*/}"
