@@ -53,10 +53,10 @@ jobs:
       run: |
         sudo cp -R BootCardMaker/uboot_HG680P.bin openwrt/
         sudo mkdir -p openwrt/mod-sdcard
-        sudo cp -R extlinux /workdir/openwrt/mod-sdcard/
-        sudo cp -R boot.ini /workdir/openwrt/mod-sdcard/
-        sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard/
-        sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard/
+        sudo cp -R extlinux openwrt/mod-sdcard/
+        sudo cp -R boot.ini openwrt/mod-sdcard/
+        sudo cp -R aml_autoscript openwrt/mod-sdcard/
+        sudo cp -R aml_autoscript.scr openwrt/mod-sdcard/
         sudo tar -czvf openwrt/mod-sdcard.tar.gz -C openwrt/mod-sdcard/ .
         cd openwrt
         sudo mkdir -p boot
