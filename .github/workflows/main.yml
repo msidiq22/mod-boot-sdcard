@@ -49,28 +49,6 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p openwrt
 
-    - name: Download Firmware
-      run: |
-        if [ $(echo ${{ github.event.inputs.img_url }} | grep "drive.") ]; then
-          if [ $(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}') ]; then
-            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}')
-          else
-            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
-          fi
-          sudo gdown ${link_gdrive} -O openwrt/firmware.${{ github.event.inputs.type_file }}
-        else
-          if [ $(echo ${{ github.event.inputs.img_url }} | grep "mediafire.com") ]; then
-            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/firmware.${{ github.event.inputs.type_file }}
-          else
-            if [ $(echo ${{ github.event.inputs.img_url }} | grep "mega.nz") ]; then
-              file_mega=$(sudo mega-get ${{ github.event.inputs.img_url }} | awk -F: '{print $2}')
-              sudo mv ${file_mega} openwrt/firmware.${{ github.event.inputs.type_file }}
-            else
-              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/firmware.${{ github.event.inputs.type_file }}
-            fi
-          fi
-        fi
-
     - name: Get extension
       id: get_extension
       run: |
@@ -81,7 +59,29 @@ jobs:
           full_extension="${filename##*.}"
         fi
         echo "Ekstensi lengkap file adalah: $full_extension"
-        echo "file_tye=$full_extension" >> $GITHUB_ENV
+        echo "file_type=$full_extension" >> $GITHUB_ENV
+
+    - name: Download Firmware
+      run: |
+        if [ $(echo ${{ github.event.inputs.img_url }} | grep "drive.") ]; then
+          if [ $(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}') ]; then
+            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}')
+          else
+            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
+          fi
+          sudo gdown ${link_gdrive} -O openwrt/firmware.${{ env.file_type }}
+        else
+          if [ $(echo ${{ github.event.inputs.img_url }} | grep "mediafire.com") ]; then
+            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/firmware.${{ env.file_type }}
+          else
+            if [ $(echo ${{ github.event.inputs.img_url }} | grep "mega.nz") ]; then
+              file_mega=$(sudo mega-get ${{ github.event.inputs.img_url }} | awk -F: '{print $2}')
+              sudo mv ${file_mega} openwrt/firmware.${{ env.file_type }}
+            else
+              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/firmware.${{ env.file_type }}
+            fi
+          fi
+        fi
         
     - name: Extract firmware
       id: extract
@@ -90,7 +90,7 @@ jobs:
         sudo mv BootCardMaker/u-boot.bin openwrt/
         sudo mv files/mod-boot-sdcard.tar.gz openwrt/
         cd openwrt
-        if [ ${{ env.file_tye }} = "img.gz" ]; then
+        if [ ${{ env.file_type }} = "img.gz" ]; then
           sudo gunzip firmware.img.gz
         else
           sudo unxz firmware.img.xz
@@ -121,13 +121,13 @@ jobs:
         echo -e "Patching Success"
         sleep 1
         echo -e "Compress file img"
-        if [ ${{ env.file_tye }} = "img.gz" ]; then
+        if [ ${{ env.file_type }} = "img.gz" ]; then
           sudo gzip firmware.img
         else
           sudo xz firmware.img
         fi
         echo -e "Compress Success"
-        echo "FIRMWARE=$PWD/firmware.${{ env.file_tye }}" >> $GITHUB_ENV
+        echo "FIRMWARE=$PWD/firmware.${{ env.file_type }}" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware
