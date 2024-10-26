@@ -57,16 +57,16 @@ jobs:
           else
             link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
           fi
-          sudo gdown ${link_gdrive} -O openwrt/
+          sudo gdown ${link_gdrive} -O openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
         else
           if [ $(echo ${{ github.event.inputs.img_url }} | grep "mediafire.com") ]; then
-            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/
+            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
           else
             if [ $(echo ${{ github.event.inputs.img_url }} | grep "mega.nz") ]; then
               file_mega=$(sudo mega-get ${{ github.event.inputs.img_url }} | awk -F: '{print $2}')
-              sudo mv ${file_mega} openwrt/
+              sudo mv ${file_mega} openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
             else
-              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/
+              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
             fi
           fi
         fi
