@@ -4,70 +4,63 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      type_dtb:
-        description: "Select type file"
-        required: false
+      bootloader:
+        description: "Select Bootloader"
+        required: true
         default: "b860h"
         type: choice
         options:
           - b860h
           - hg680p
-      img_url:
-        description: "Set the url img file"
+      fw_link:
+        description: "Insert Firmware Link"
         required: true
         default: ""
 
-env:
-  TZ: Asia/Jakarta
-
 jobs:
   setup:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@main
 
-    - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
+    - name: SetUp environment
       run: |
         PWD=$(pwd)
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo -E apt-get -qq update
-        sudo -E apt-get -y install wget python3
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
-        sudo pip3 install gdown
-        sudo pip3 install git+https://github.com/Juvenal-Yescas/mediafire-dl
-        wget https://mega.nz/linux/repo/xUbuntu_20.04/amd64/megacmd-xUbuntu_20.04_amd64.deb && sudo apt install "$PWD/megacmd-xUbuntu_20.04_amd64.deb"
-        sudo timedatectl set-timezone "$TZ"
-        sudo mkdir -p openwrt
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc > /dev/null 2>&1
+        sudo -E apt-get -qq update > /dev/null 2>&1
+        sudo -E apt-get -y install wget python3 > /dev/null 2>&1
+        sudo -E apt-get -qq autoremove --purge > /dev/null 2>&1
+        sudo -E apt-get -qq clean > /dev/null 2>&1
+        sudo pip3 install gdown > /dev/null 2>&1
+        sudo pip3 install git+https://github.com/Juvenal-Yescas/mediafire-dl > /dev/null 2>&1
+        wget https://mega.nz/linux/repo/xUbuntu_22.04/amd64/megacmd-xUbuntu_22.04_amd64.deb && sudo apt install "$PWD/megacmd-xUbuntu_22.04_amd64.deb" > /dev/null 2>&1
+        sudo mkdir -p openwrt > /dev/null 2>&1
 
     - name: Download Firmware
       run: |
-        if [ $(echo ${{ github.event.inputs.img_url }} | grep "drive.") ]; then
-          if [ $(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}') ]; then
-            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}')
+        if [ $(echo ${{ github.event.inputs.fw_link }} | grep "drive.") ]; then
+          if [ $(echo ${{ github.event.inputs.fw_link }} | awk -F "/" '{print $6}') ]; then
+            link_gdrive=$(echo ${{ github.event.inputs.fw_link }} | awk -F "/" '{print $6}')
           else
-            link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
+            link_gdrive=$(echo ${{ github.event.inputs.fw_link }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
           fi
-          sudo gdown ${link_gdrive} -O openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
+          sudo gdown ${link_gdrive} -O openwrt/$(echo "${{ github.event.inputs.fw_link }}" | awk -F/ '{print $NF}')
         else
-          if [ $(echo ${{ github.event.inputs.img_url }} | grep "mediafire.com") ]; then
-            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
+          if [ $(echo ${{ github.event.inputs.fw_link }} | grep "mediafire.com") ]; then
+            sudo mediafire-dl ${{ github.event.inputs.fw_link }} -o openwrt/$(echo "${{ github.event.inputs.fw_link }}" | awk -F/ '{print $NF}')
           else
-            if [ $(echo ${{ github.event.inputs.img_url }} | grep "mega.nz") ]; then
-              file_mega=$(sudo mega-get ${{ github.event.inputs.img_url }} | awk -F: '{print $2}')
-              sudo mv ${file_mega} openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
+            if [ $(echo ${{ github.event.inputs.fw_link }} | grep "mega.nz") ]; then
+              file_mega=$(sudo mega-get ${{ github.event.inputs.fw_link }} | awk -F: '{print $2}')
+              sudo mv ${file_mega} openwrt/$(echo "${{ github.event.inputs.fw_link }}" | awk -F/ '{print $NF}')
             else
-              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/$(echo "${{ github.event.inputs.img_url }}" | awk -F/ '{print $NF}')
+              sudo wget --no-check-certificate ${{ github.event.inputs.fw_link }} -O openwrt/$(echo "${{ github.event.inputs.fw_link }}" | awk -F/ '{print $NF}')
             fi
           fi
         fi
 
     - name: Get extension
-      id: get_extension
       run: |
         filename=$(find ./openwrt -name "*.img.*")
         extension=$(basename "$filename" | sed -E 's/.*\.(img\.(gz|xz))$/\1/')
@@ -76,7 +69,6 @@ jobs:
         echo "file_name=$no_extension" >> $GITHUB_ENV
         
     - name: Extract firmware
-      id: extract
       run: |
         sudo mkdir -p openwrt/boot
         sudo mv BootCardMaker/u-boot.bin openwrt/
@@ -94,9 +86,9 @@ jobs:
         extlinux=$(sudo cat boot/extlinux/extlinux.conf | grep append | awk -F "root=" '{print $2}')
         sudo sed -i "s|$extlinux|$uenv|g" boot/extlinux/extlinux.conf
         sleep 1
-        if [ ${{ github.event.inputs.type_dtb }} = "b860h" ]; then
+        if [ ${{ github.event.inputs.bootloader }} = "b860h" ]; then
           dtb="meson-gxl-s905x-b860h.dtb"
-        elif [ ${{ github.event.inputs.type_dtb }} = "hg680p" ]; then
+        elif [ ${{ github.event.inputs.bootloader }} = "hg680p" ]; then
           dtb="meson-gxl-s905x-p212.dtb"
         fi
         boot=$(sudo cat boot/boot.ini | grep dtb | awk -F "/" '{print $4}' | cut -d'"' -f1)
@@ -131,3 +123,5 @@ jobs:
         prerelease: false
         files: |
               ${{ env.FILE_PATH }}
+        body: |
+              Mod SDCard
