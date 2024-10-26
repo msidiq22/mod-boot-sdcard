@@ -82,6 +82,7 @@ jobs:
       id: extract
       run: |
         sudo mkdir -p openwrt/boot
+        sudo mv BootCardMaker/u-boot.bin openwrt/
         sudo mv files/mod-boot-sdcard.tar.gz openwrt/
         cd openwrt
         if [ ${{ github.event.inputs.type_file }} = "img.gz" ]; then
