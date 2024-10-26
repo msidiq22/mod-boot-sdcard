@@ -1,0 +1,104 @@
+name: Mod SDCard
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      bootloader:
+        description: "Select Bootloader Type"
+        required: false
+        default: "b860h"
+        type: choice
+        options:
+          - b860h
+          - hg680p
+      firmware:
+        description: "Insert Firmware url (wget)"
+        required: true
+        default: ""
+
+env:
+  TZ: Asia/Jakarta
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir/openwrt
+        sudo chown $USER:$GROUPS /workdir
+        
+    - name: Download Firmware
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        sudo wget --no-check-certificate ${{ github.event.inputs.firmware }} -O openwrt/firmware.${{ github.event.inputs.bootloader }}
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+    - name: Extract firmware
+      id: extract
+      run: |
+        sudo cp -R BootCardMaker/uboot_HG680P.bin /workdir/openwrt
+        sudo mkdir -p /workdir/openwrt/mod-sdcard
+        sudo cp -R extlinux /workdir/openwrt/mod-sdcard
+        sudo cp -R boot.ini /workdir/openwrt/mod-sdcard
+        sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard
+        sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard
+        tar -czvf /workdir/openwrt/mod-sdcard.tar.gz -C /workdir/openwrt/mod-sdcard .
+        cd openwrt
+        sudo mkdir -p boot
+        if [ ${{ github.event.inputs.bootloader }} = "img.gz" ]; then
+          sudo gunzip firmware.img.gz
+        else
+          sudo unxz firmware.img.xz
+        fi
+        device=$(sudo losetup -fP --show firmware.img)
+        sudo mount ${device}p1 boot
+        cd boot && sudo tar xfz /workdir/openwrt/mod-sdcard.tar.gz)
+        echo -e "Patching extlinux.conf"
+        uenv=$(sudo cat /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
+        extlinux=$(sudo cat /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
+        sudo sed -i "s/$extlinux/$uenv/g" /workdir/openwrt/boot/extlinux/extlinux.conf
+        sleep 1
+        echo -e "Patching boot.ini"
+        if [ ${{ github.event.inputs.bootloader }} = "b860h" ]; then
+          dtb="meson-gxl-s905x-b860h.dtb"
+        elif [ ${{ github.event.inputs.bootloader }} = "hg680p" ]; then
+          dtb="meson-gxl-s905x-p212.dtb"
+        fi
+        boot=$(sudo cat /workdir/openwrt/boot/boot.ini | grep dtb | awk -F "/" '{print $4}' | cut -d'"' -f1)
+        sudo sed -i "s/$boot/$dtb/g" /workdir/openwrt/boot/boot.ini
+        sudo sed -i "s/$boot/$dtb/g" /workdir/openwrt/boot/extlinux/extlinux.conf
+        sudo umount ${device}p1
+        sleep 1
+        echo -e "Adding Amlogic Bootloader"
+        sudo dd if=u-boot.bin of=${device} bs=1 count=444 conv=fsync 2>/dev/null
+        sudo dd if=u-boot.bin of=${device} bs=512 skip=1 seek=1 conv=fsync 2>/dev/null
+        sudo losetup -d ${device}
+        echo -e "Patching Success"
+        sleep 1
+        sudo mv /workdir/openwrt/boot/u-boot-s905x-s912.bin /workdir/openwrt/boot/u-boot.ext
+        sleep 1
+        echo -e "Compress file img"
+        if [ ${{ github.event.inputs.firmware }} = "img.gz" ]; then
+          sudo gzip firmware.img
+        else
+          sudo xz firmware.img
+        fi
+        echo -e "Compress Success"
+        echo "FIRMWARE=$PWD/firmware.${{ github.event.inputs.firmware }}" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@main
+      if: steps.extract.outputs.status == 'success'
+      with:
+        name: firmware-${{ github.event.inputs.bootloader }}
+        path: ${{ env.FIRMWARE }}
