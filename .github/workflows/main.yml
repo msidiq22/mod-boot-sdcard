@@ -39,10 +39,11 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        sudo wget --no-check-certificate ${{ github.event.inputs.firmware }} -O openwrt/firmware.${{ github.event.inputs.firmware | awk -F. '{print $NF}' }}
+        url="${{ github.event.inputs.firmware }}"
+        ext="${url##*.}"
+        sudo wget --no-check-certificate "$url" -O "openwrt/firmware.$ext"
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        file_type=${{ github.event.inputs.firmware | awk -F. '{print $NF}' }}
-        echo "file_type=$file_type" >> $GITHUB_ENV
+        echo "file_type=$ext" >> $GITHUB_ENV
         
     - name: Extract firmware
       id: extract
