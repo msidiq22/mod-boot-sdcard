@@ -11,6 +11,14 @@ on:
         options:
           - b860h
           - hg680p
+      file_type:
+        description: "Select type file"
+        required: false
+        default: "img.xz"
+        type: choice
+        options:
+          - img.xz
+          - img.gz
       firmware:
         description: "Insert Firmware url (wget)"
         required: true
@@ -39,8 +47,9 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        sudo wget --no-check-certificate ${{ github.event.inputs.firmware }} -O openwrt/firmware.${{ github.event.inputs.bootloader }}
+        sudo wget --no-check-certificate ${{ github.event.inputs.firmware }} -O openwrt/firmware.${{ github.event.inputs.file_type }}
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        
 
     - name: Extract firmware
       id: extract
@@ -54,7 +63,7 @@ jobs:
         sudo tar -czvf openwrt/mod-sdcard.tar.gz -C openwrt/mod-sdcard/ .
         cd openwrt
         sudo mkdir -p boot
-        if [ ${{ github.event.inputs.bootloader }} = "img.gz" ]; then
+        if [ ${{ github.event.inputs.file_type }} = "img.gz" ]; then
           sudo gunzip firmware.img.gz
         else
           sudo unxz firmware.img.xz
@@ -87,13 +96,13 @@ jobs:
         sudo mv /workdir/openwrt/boot/u-boot-s905x-s912.bin /workdir/openwrt/boot/u-boot.ext
         sleep 1
         echo -e "Compress file img"
-        if [ ${{ github.event.inputs.firmware }} = "img.gz" ]; then
+        if [ ${{ github.event.inputs.file_type }} = "img.gz" ]; then
           sudo gzip firmware.img
         else
           sudo xz firmware.img
         fi
         echo -e "Compress Success"
-        echo "FIRMWARE=$PWD/firmware.${{ github.event.inputs.firmware }}" >> $GITHUB_ENV
+        echo "FIRMWARE=$PWD/firmware.${{ github.event.inputs.file_type }}" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware
