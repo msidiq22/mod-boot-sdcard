@@ -13,7 +13,7 @@
 **Cara Pasang Via Github Action:**
 
 * Fork Repository ini
-* Buka Tab Actions Pada Repository ini yang sudah anda fork
+* Buka Tab Actions Pada Repository yang sudah anda fork
 * Pilih Mod SDCard
 * Klik Run workflow
 * Pilih Tipe STB dan Masukkan Link firmware
