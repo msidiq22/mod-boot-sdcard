@@ -49,18 +49,6 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p openwrt
 
-    - name: Get extension
-      id: get_extension
-      run: |
-        filename=$(basename "${{ github.event.inputs.img_url }}")
-        if [[ "$filename" =~ \.([^.]+\.[^.]+)$ ]]; then
-          full_extension="${BASH_REMATCH[1]}"
-         else
-          full_extension="${filename##*.}"
-        fi
-        echo "Ekstensi lengkap file adalah: $full_extension"
-        echo "file_type=$full_extension" >> $GITHUB_ENV
-
     - name: Download Firmware
       run: |
         if [ $(echo ${{ github.event.inputs.img_url }} | grep "drive.") ]; then
@@ -69,19 +57,28 @@ jobs:
           else
             link_gdrive=$(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $4}' | awk -F "?id=" '{print $2}'|awk -F "&export" '{print $1}')
           fi
-          sudo gdown ${link_gdrive} -O openwrt/firmware.${{ env.file_type }}
+          sudo gdown ${link_gdrive} -O openwrt/
         else
           if [ $(echo ${{ github.event.inputs.img_url }} | grep "mediafire.com") ]; then
-            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/firmware.${{ env.file_type }}
+            sudo mediafire-dl ${{ github.event.inputs.img_url }} -o openwrt/
           else
             if [ $(echo ${{ github.event.inputs.img_url }} | grep "mega.nz") ]; then
               file_mega=$(sudo mega-get ${{ github.event.inputs.img_url }} | awk -F: '{print $2}')
-              sudo mv ${file_mega} openwrt/firmware.${{ env.file_type }}
+              sudo mv ${file_mega} openwrt/
             else
-              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/firmware.${{ env.file_type }}
+              sudo wget --no-check-certificate ${{ github.event.inputs.img_url }} -O openwrt/
             fi
           fi
         fi
+
+    - name: Get extension
+      id: get_extension
+      run: |
+        filename=$(find ./openwrt -name "*.img.*")
+        extension=$(basename "$filename" | sed -E 's/.*\.(img\.(gz|xz))$/\1/')
+        no_extension=$(basename "$filename" | sed -E 's/\.(gz|xz)$//')
+        echo "file_type=$extension" >> $GITHUB_ENV
+        echo "file_name=$no_extension" >> $GITHUB_ENV
         
     - name: Extract firmware
       id: extract
@@ -91,9 +88,9 @@ jobs:
         sudo mv files/mod-boot-sdcard.tar.gz openwrt/
         cd openwrt
         if [ ${{ env.file_type }} = "img.gz" ]; then
-          sudo gunzip firmware.img.gz
+          sudo gunzip ${{ env.file_name }}.gz
         else
-          sudo unxz firmware.img.xz
+          sudo unxz ${{ env.file_name }}.xz
         fi
         device=$(sudo losetup -fP --show firmware.img)
         sudo mount ${device}p1 boot
@@ -122,9 +119,9 @@ jobs:
         sleep 1
         echo -e "Compress file img"
         if [ ${{ env.file_type }} = "img.gz" ]; then
-          sudo gzip firmware.img
+          sudo gzip ${{ env.file_name }}
         else
-          sudo xz firmware.img
+          sudo xz ${{ env.file_name }}
         fi
         echo -e "Compress Success"
         echo "FIRMWARE=$PWD/firmware.${{ env.file_type }}" >> $GITHUB_ENV
