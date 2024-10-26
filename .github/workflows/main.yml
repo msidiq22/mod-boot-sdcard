@@ -96,7 +96,7 @@ jobs:
         fi
         device=$(sudo losetup -fP --show firmware.img)
         sudo mount ${device}p1 boot
-        (cd boot && sudo tar xfz /workdir/openwrt/mod-boot-sdcard.tar.gz)
+        (cd boot && sudo tar -xzvf /workdir/openwrt/mod-boot-sdcard.tar.gz)
         echo -e "Patching extlinux.conf"
         uenv=$(sudo cat /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo cat /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
