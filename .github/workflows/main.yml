@@ -84,7 +84,6 @@ jobs:
         device=$(sudo losetup -fP --show ${{ env.file_name }})
         sudo mount ${device}p1 boot
         sudo tar -xzvf mod-boot-sdcard.tar.gz -C boot
-        sleep 1
         uenv=$(sudo cat boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo cat boot/extlinux/extlinux.conf | grep append | awk -F "root=" '{print $2}')
         sudo sed -i "s|$extlinux|$uenv|g" boot/extlinux/extlinux.conf
