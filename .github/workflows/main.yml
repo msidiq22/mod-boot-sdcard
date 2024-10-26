@@ -40,8 +40,16 @@ jobs:
       run: |
         df -hT $PWD
         url="${{ github.event.inputs.firmware }}"
-        ext="${url##*.}"
-        sudo wget --no-check-certificate "$url" -O "openwrt/firmware.$ext"
+        filename="${url##*/}"
+        if [[ "$filename" == *.gz ]]; then
+            ext="img.gz"
+        elif [[ "$filename" == *.xz ]]; then
+            ext="img.xz"
+        else
+            echo "Ekstensi tidak dikenali"
+            exit 1
+        fi
+        sudo wget --no-check-certificate "$url" -O "openwrt/firmware.$ext" > /dev/null 2>&1
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         echo "file_type=$ext" >> $GITHUB_ENV
         
