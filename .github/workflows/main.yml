@@ -98,8 +98,8 @@ jobs:
         sudo mount ${device}p1 boot
         (cd boot && sudo tar -xzvf /workdir/openwrt/mod-boot-sdcard.tar.gz)
         echo -e "Patching extlinux.conf"
-        uenv=$(sudo cat /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
-        extlinux=$(sudo cat /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
+        uenv=$(sudo grep -i /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
+        extlinux=$(sudo grep -i /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
         sudo sed -i "s/$extlinux/$uenv/g" /workdir/openwrt/boot/extlinux/extlinux.conf
         sleep 1
         echo -e "Patching boot.ini"
