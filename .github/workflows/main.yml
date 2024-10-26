@@ -17,14 +17,6 @@ on:
         options:
           - b860h
           - hg680p
-      type_file:
-        description: "Select type file"
-        required: false
-        default: "img.xz"
-        type: choice
-        options:
-          - img.xz
-          - img.gz
       img_url:
         description: "Set the url img file"
         required: true
@@ -45,6 +37,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        PWD=pwd
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq update
         sudo -E apt-get -y install wget python3
@@ -56,7 +49,7 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p openwrt
 
-    - name: Download file ${{ github.event.inputs.type_file }}
+    - name: Download Firmware
       run: |
         if [ $(echo ${{ github.event.inputs.img_url }} | grep "drive.") ]; then
           if [ $(echo ${{ github.event.inputs.img_url }} | awk -F "/" '{print $6}') ]; then
@@ -77,6 +70,18 @@ jobs:
             fi
           fi
         fi
+
+    - name: Get extension
+      id: get_extension
+      run: |
+        filename=$(basename "${{ github.event.inputs.img_url }}")
+        if [[ "$filename" =~ \.([^.]+\.[^.]+)$ ]]; then
+          full_extension="${BASH_REMATCH[1]}"
+         else
+          full_extension="${filename##*.}"
+        fi
+        echo "Ekstensi lengkap file adalah: $full_extension"
+        echo "file_tye=$full_extension" >> $GITHUB_ENV
         
     - name: Extract firmware
       id: extract
@@ -85,7 +90,7 @@ jobs:
         sudo mv BootCardMaker/u-boot.bin openwrt/
         sudo mv files/mod-boot-sdcard.tar.gz openwrt/
         cd openwrt
-        if [ ${{ github.event.inputs.type_file }} = "img.gz" ]; then
+        if [ ${{ env.file_tye }} = "img.gz" ]; then
           sudo gunzip firmware.img.gz
         else
           sudo unxz firmware.img.xz
@@ -116,13 +121,13 @@ jobs:
         echo -e "Patching Success"
         sleep 1
         echo -e "Compress file img"
-        if [ ${{ github.event.inputs.type_file }} = "img.gz" ]; then
+        if [ ${{ env.file_tye }} = "img.gz" ]; then
           sudo gzip firmware.img
         else
           sudo xz firmware.img
         fi
         echo -e "Compress Success"
-        echo "FIRMWARE=$PWD/firmware.${{ github.event.inputs.type_file }}" >> $GITHUB_ENV
+        echo "FIRMWARE=$PWD/firmware.${{ env.file_tye }}" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware
