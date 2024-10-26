@@ -51,7 +51,7 @@ jobs:
         sudo cp -R boot.ini /workdir/openwrt/mod-sdcard
         sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard
         sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard
-        sudo tar -czvf openwrt/mod-sdcard.tar.gz -C openwrt/mod-sdcard/*
+        sudo tar -czvf openwrt/mod-sdcard.tar.gz -C openwrt/mod-sdcard/ .
         cd openwrt
         sudo mkdir -p boot
         if [ ${{ github.event.inputs.bootloader }} = "img.gz" ]; then
