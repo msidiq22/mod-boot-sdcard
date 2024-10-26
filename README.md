@@ -1,22 +1,9 @@
-# mod-boot-sdcard
+***MOD BOOT SDCARD***
 
--ganti partisi bootloader di sdcard
-
--aml_autoscript
-
-if printenv bootfromsd; then exit; fi;
-if fatload mmc 0 0x1000000 u-boot.ext; then go 0x1000000; fi;
-
--boot.ini
-
-if test "${devtype}" = ""; then setenv devtype "/dtb/amlogic/meson-gxl-s905x-p212.dtb"; fi
-if fatload ${devtype} ${devnum} 0x1000000 u-boot.ext; then go 0x1000000; fi;
-
--extlinux.conf
-
-LABEL Armbian
-LINUX /"sesuaikan dengan firmware"
-INITRD /uInitrd
-
-FDT /dtb/amlogic/"sesuaikan dengan firmware"
-APPEND root=LABEL=ROOTFS rootflags=data=writeback rw console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0
+* Buka partisi boot pada sdcard openwrt
+* Copy isi repository ini kedalam partisi boot
+* Buka folder ```extlinux``` edit ```extlinux.conf``` ganti ```UUID``` sesuai dengan yang ada di ```uEnv.txt```
+* Edit dtb sesuai tipe STB pada file ```extlinux.conf``` , ```boot.ini``` dan ```uEnv.txt```
+* Ganti nama file ```u-boot-s905x-s912.bin``` menjadi ```u-boot.ext```
+* Buat bootcard menggunakan AMLogic bootcardmaker
+* Done
