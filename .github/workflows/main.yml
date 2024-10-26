@@ -32,13 +32,12 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo timedatectl set-timezone "$TZ"
-        sudo mkdir -p /workdir/openwrt
-        sudo chown $USER:$GROUPS /workdir
+        sudo mkdir -p openwrt
+        sudo chown $USER:$GROUPS openwrt
         
     - name: Download Firmware
       working-directory: /workdir
       run: |
-        df -hT $PWD
         url="${{ github.event.inputs.firmware }}"
         filename="${url##*/}"
         if [[ "$filename" == *.gz ]]; then
@@ -50,18 +49,17 @@ jobs:
             exit 1
         fi
         sudo wget --no-check-certificate "$url" -O "openwrt/firmware.$ext" > /dev/null 2>&1
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         echo "file_type=$ext" >> $GITHUB_ENV
         
     - name: Extract firmware
       id: extract
       run: |
-        sudo cp -R BootCardMaker/uboot_HG680P.bin /workdir/openwrt
-        sudo mkdir -p /workdir/openwrt/mod-sdcard
-        sudo cp -R extlinux/ /workdir/openwrt/mod-sdcard
-        sudo cp -R boot.ini /workdir/openwrt/mod-sdcard
-        sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard
-        sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard
+        sudo cp -R BootCardMaker/uboot_HG680P.bin openwrt/
+        sudo mkdir -p openwrt/mod-sdcard
+        sudo cp -R extlinux /workdir/openwrt/mod-sdcard/
+        sudo cp -R boot.ini /workdir/openwrt/mod-sdcard/
+        sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard/
+        sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard/
         sudo tar -czvf openwrt/mod-sdcard.tar.gz -C openwrt/mod-sdcard/ .
         cd openwrt
         sudo mkdir -p boot
@@ -72,11 +70,11 @@ jobs:
         fi
         device=$(sudo losetup -fP --show firmware.img)
         sudo mount ${device}p1 boot
-        cd boot && sudo tar -xzvf /workdir/openwrt/mod-sdcard.tar.gz)
+        cd boot && sudo tar -xzvf openwrt/mod-sdcard.tar.gz)
         echo -e "Patching extlinux.conf"
-        uenv=$(sudo cat /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
-        extlinux=$(sudo cat /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
-        sudo sed -i "s/$extlinux/$uenv/g" /workdir/openwrt/boot/extlinux/extlinux.conf
+        uenv=$(sudo cat openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
+        extlinux=$(sudo cat openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
+        sudo sed -i "s/$extlinux/$uenv/g" openwrt/boot/extlinux/extlinux.conf
         sleep 1
         echo -e "Patching boot.ini"
         if [ ${{ github.event.inputs.bootloader }} = "b860h" ]; then
@@ -84,9 +82,9 @@ jobs:
         elif [ ${{ github.event.inputs.bootloader }} = "hg680p" ]; then
           dtb="meson-gxl-s905x-p212.dtb"
         fi
-        boot=$(sudo cat /workdir/openwrt/boot/boot.ini | grep dtb | awk -F "/" '{print $4}' | cut -d'"' -f1)
-        sudo sed -i "s/$boot/$dtb/g" /workdir/openwrt/boot/boot.ini
-        sudo sed -i "s/$boot/$dtb/g" /workdir/openwrt/boot/extlinux/extlinux.conf
+        boot=$(sudo cat openwrt/boot/boot.ini | grep dtb | awk -F "/" '{print $4}' | cut -d'"' -f1)
+        sudo sed -i "s/$boot/$dtb/g" openwrt/boot/boot.ini
+        sudo sed -i "s/$boot/$dtb/g" openwrt/boot/extlinux/extlinux.conf
         sudo umount ${device}p1
         sleep 1
         echo -e "Adding Amlogic Bootloader"
@@ -95,7 +93,7 @@ jobs:
         sudo losetup -d ${device}
         echo -e "Patching Success"
         sleep 1
-        sudo mv /workdir/openwrt/boot/u-boot-s905x-s912.bin /workdir/openwrt/boot/u-boot.ext
+        sudo mv openwrt/boot/u-boot-s905x-s912.bin /workdir/openwrt/boot/u-boot.ext
         sleep 1
         echo -e "Compress file img"
         if [ ${{ env.file_type }} = "img.gz" ]; then
