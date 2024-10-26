@@ -83,10 +83,12 @@ jobs:
         device=$(sudo losetup -fP --show ${{ env.file_name }})
         sudo mount ${device}p1 boot
         sudo tar -xzvf mod-boot-sdcard.tar.gz -C boot
+        echo -e "Patching extlinux.conf"
         uenv=$(sudo cat boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo cat boot/extlinux/extlinux.conf | grep append | awk -F "root=" '{print $2}')
         sudo sed -i "s/$extlinux/$uenv/g" boot/extlinux/extlinux.conf
         sleep 1
+        echo -e "Patching boot.ini"
         if [ ${{ github.event.inputs.type_dtb }} = "b860h" ]; then
           dtb="meson-gxl-s905x-b860h.dtb"
         elif [ ${{ github.event.inputs.type_dtb }} = "hg680p" ]; then
@@ -97,10 +99,13 @@ jobs:
         sudo sed -i "s/$boot/$dtb/g" boot/extlinux/extlinux.conf
         sudo umount ${device}p1
         sleep 1
+        echo -e "Adding Amlogic Bootloader"
         sudo dd if=u-boot.bin of=${device} bs=1 count=444 conv=fsync 2>/dev/null
         sudo dd if=u-boot.bin of=${device} bs=512 skip=1 seek=1 conv=fsync 2>/dev/null
         sudo losetup -d ${device}
+        echo -e "Patching Success"
         sleep 1
+        echo -e "Compress file img"
         if [ ${{ env.file_type }} = "img.gz" ]; then
           sudo gzip ${{ env.file_name }}
         else
