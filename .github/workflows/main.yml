@@ -92,7 +92,7 @@ jobs:
         else
           sudo unxz ${{ env.file_name }}.xz
         fi
-        device=$(sudo losetup -fP --show firmware.img)
+        device=$(sudo losetup -fP --show ${{ env.file_name }})
         sudo mount ${device}p1 boot
         sudo tar -xzvf mod-boot-sdcard.tar.gz -C boot
         echo -e "Patching extlinux.conf"
@@ -124,12 +124,17 @@ jobs:
           sudo xz ${{ env.file_name }}
         fi
         echo -e "Compress Success"
-        echo "FIRMWARE=$PWD/firmware.${{ env.file_type }}" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: Upload firmware
-      uses: actions/upload-artifact@main
-      if: steps.extract.outputs.status == 'success'
+    - name: Find Firmware
+      run: |
+        FILE_PATH=$(find -name "*.img.*")
+        echo "FILE_PATH=$FILE_PATH" >> $GITHUB_ENV
+        echo -e "FILE_PATH path: $FILE_PATH"
+          
+    - name: Upload Firmware
+      uses: actions/upload-artifact@v3
       with:
-        name: firmware-${{ github.event.inputs.type_dtb }}
-        path: ${{ env.FIRMWARE }}
+        name: amlogic-firmware
+        path: |
+          ${{ env.FILE_PATH }}
