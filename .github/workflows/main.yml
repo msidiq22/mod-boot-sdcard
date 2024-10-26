@@ -51,7 +51,7 @@ jobs:
         sudo cp -R boot.ini /workdir/openwrt/mod-sdcard
         sudo cp -R aml_autoscript /workdir/openwrt/mod-sdcard
         sudo cp -R aml_autoscript.scr /workdir/openwrt/mod-sdcard
-        tar -czvf /workdir/openwrt/mod-sdcard.tar.gz -C /workdir/openwrt/mod-sdcard .
+        sudo tar -czvf /workdir/openwrt/mod-sdcard.tar.gz -C /workdir/openwrt/mod-sdcard/*
         cd openwrt
         sudo mkdir -p boot
         if [ ${{ github.event.inputs.bootloader }} = "img.gz" ]; then
@@ -61,7 +61,7 @@ jobs:
         fi
         device=$(sudo losetup -fP --show firmware.img)
         sudo mount ${device}p1 boot
-        cd boot && sudo tar xfz /workdir/openwrt/mod-sdcard.tar.gz)
+        cd boot && sudo tar -xzvf /workdir/openwrt/mod-sdcard.tar.gz)
         echo -e "Patching extlinux.conf"
         uenv=$(sudo cat /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo cat /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
