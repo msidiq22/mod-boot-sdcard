@@ -55,7 +55,6 @@ jobs:
         wget https://mega.nz/linux/repo/xUbuntu_20.04/amd64/megacmd-xUbuntu_20.04_amd64.deb && sudo apt install "$PWD/megacmd-xUbuntu_20.04_amd64.deb"
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p openwrt
-        sudo chown $USER:$GROUPS /workdir
 
     - name: Download file ${{ github.event.inputs.type_file }}
       working-directory: /openwrt
