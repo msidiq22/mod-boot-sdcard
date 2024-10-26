@@ -82,7 +82,7 @@ jobs:
       id: extract
       run: |
         sudo mkdir -p openwrt/boot
-        sudo tar -xzvf files/mod-boot-sdcard.tar.gz -C openwrt/boot
+        sudo mv files/mod-boot-sdcard.tar.gz openwrt/
         cd openwrt
         if [ ${{ github.event.inputs.type_file }} = "img.gz" ]; then
           sudo gunzip firmware.img.gz
@@ -91,6 +91,7 @@ jobs:
         fi
         device=$(sudo losetup -fP --show firmware.img)
         sudo mount ${device}p1 boot
+        sudo tar -xzvf mod-boot-sdcard.tar.gz -C boot
         echo -e "Patching extlinux.conf"
         uenv=$(sudo cat boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo cat boot/extlinux/extlinux.conf | grep append | awk -F "root=" '{print $2}')
