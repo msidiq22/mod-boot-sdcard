@@ -100,7 +100,7 @@ jobs:
         echo -e "Patching extlinux.conf"
         uenv=$(sudo grep -i /workdir/openwrt/boot/uEnv.txt | grep APPEND | awk -F "root=" '{print $2}')
         extlinux=$(sudo grep -i /workdir/openwrt/boot/extlinux/extlinux.conf | grep APPEND | awk -F "root=" '{print $2}')
-        sudo sed -i "s/$extlinux/$uenv/g" /workdir/openwrt/boot/extlinux/extlinux.conf
+        sudo sed -i "s|$extlinux|$uenv|g" /workdir/openwrt/boot/extlinux/extlinux.conf
         sleep 1
         echo -e "Patching boot.ini"
         if [ ${{ github.event.inputs.type_dtb }} = "b860h" ]; then
